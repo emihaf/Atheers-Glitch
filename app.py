@@ -1,5 +1,5 @@
 import streamlit as st
-import google.generativeai as genai
+import genai.GenerativeModel('gemini-pro')
 
 # إعدادات الواجهة
 st.set_page_config(page_title="Atheer's Glitch", page_icon="🐎")
