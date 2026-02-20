@@ -1,35 +1,42 @@
 import streamlit as st
 import google.generativeai as genai
 import os
-from PIL import Image
-import io
+from PIL import Image # For potential image display handling later, keep for now
+import io # For handling image bytes
 
 st.set_page_config(page_title="Atheer's Soul", page_icon="🌌", layout="wide")
 
 # --- Custom CSS for RTL, Fixed Input, and Scrollable Chat ---
 st.markdown("""
 <style>
-/* Forcing RTL direction for Arabic text in chat messages */
-.st-chat-message-contents div p {
+/* General RTL for Streamlit elements that don't have explicit direction */
+html, body, [data-testid="stApp"], .main, .block-container, .st-emotion-cache-vk3372, .st-emotion-cache-1629p8f {
     direction: rtl;
     text-align: right;
-    unicode-bidi: embed; /* Ensures embedded LTR text is handled correctly */
+}
+
+/* Forcing RTL direction for Arabic text in chat messages */
+.st-chat-message-contents div p, .st-chat-message-contents div {
+    direction: rtl !important;
+    text-align: right !important;
+    unicode-bidi: plaintext !important; /* Ensures embedded LTR text is handled correctly */
 }
 /* Ensure input field also supports RTL for mixed content */
-.st-text-area textarea {
-    direction: rtl;
-    text-align: right;
-    unicode-bidi: embed;
+.st-text-area textarea, .st-text-input input {
+    direction: rtl !important;
+    text-align: right !important;
+    unicode-bidi: plaintext !important;
 }
-/* General message container for RTL */
+/* Specific targeting for chat messages to ensure consistency */
 .st-chat-message {
-    direction: rtl;
-    text-align: right;
+    direction: rtl !important;
+    text-align: right !important;
 }
 .st-chat-message-container {
-    direction: rtl;
-    text-align: right;
+    direction: rtl !important;
+    text-align: right !important;
 }
+
 
 /* Fixed chat input container at the bottom */
 .fixed-chat-input-container {
@@ -37,16 +44,17 @@ st.markdown("""
     bottom: 0;
     left: 0;
     right: 0;
-    background-color: var(--secondary-background-color, #f0f2f6); /* Streamlit's secondary background */
+    background-color: var(--secondary-background-color); /* Streamlit's secondary background color */
     padding: 1rem;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
     z-index: 1000;
-    display: flex; /* Use flexbox for internal layout */
-    flex-direction: column; /* Stack input elements vertically */
-    gap: 0.5rem; /* Space between input elements */
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 /* Adjust the padding of the main content area to prevent overlap with the fixed input */
+/* This value might need slight tweaking based on device/browser */
 .main > div.block-container {
     padding-bottom: 15rem; /* Increased padding to accommodate file uploader + text area + button */
 }
@@ -170,8 +178,12 @@ if api_key:
             # --- Fixed chat input at the bottom ---
             st.markdown("<div class='fixed-chat-input-container'>", unsafe_allow_html=True)
             with st.form("chat_form", clear_on_submit=True):
-                user_input = st.text_area("تحدث بعمق يا فارس...", height=70, key="chat_input_area", placeholder="اكتب رسالتك هنا...")
-                uploaded_file = st.file_uploader("إرسال صورة (اختياري)", type=["png", "jpg", "jpeg"], key="image_uploader")
+                col1, col2 = st.columns([0.8, 0.2]) # Adjust column width for input and uploader
+                with col1:
+                    user_input = st.text_area("تحدث بعمق يا فارس...", height=70, key="chat_input_area", placeholder="اكتب رسالتك هنا...")
+                with col2:
+                    uploaded_file = st.file_uploader("صورة 🖼️", type=["png", "jpg", "jpeg"], key="image_uploader", label_visibility="collapsed")
+
                 submit_button = st.form_submit_button("إرسال 🚀")
 
                 if submit_button and (user_input or uploaded_file):
@@ -184,7 +196,11 @@ if api_key:
                     if uploaded_file:
                         bytes_data = uploaded_file.getvalue()
                         mime_type = uploaded_file.type
-                        message_parts.append(genai.upload_file(data=bytes_data, display_name=uploaded_file.name)) # Using upload_file for persistent media
+                        # Correct way to send inline image data in parts list
+                        message_parts.append({
+                            "mime_type": mime_type,
+                            "data": bytes_data
+                        })
                         display_message["image_data"] = bytes_data
                         display_message["image_type"] = mime_type
 
@@ -212,3 +228,4 @@ if api_key:
 else:
     st.warning("بانتظار المفتاح لنستعيد الذاكرة وننطلق في مغامرتنا...")
     st.image("https://images.unsplash.com/photo-1533167649158-6d508895b680?auto=format&fit=crop&q=80&w=1000", caption="في انتظار صهيل خيول الحرية...")
+        
